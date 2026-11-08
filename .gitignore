@@ -8,3 +8,10 @@ __pycache__/
 *$py.class
 .ruff_cache
 .mypy_cache
+
+# Personal schedule exports
+*.ics
+_site/
+.env
+.env.*
+!.env.example

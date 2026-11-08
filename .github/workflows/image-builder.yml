@@ -6,14 +6,17 @@ on:
 
 jobs:
   run-code-checks:
+    if: github.repository == 'iburakov/my-itmo-ru-to-ical'
     uses: ./.github/workflows/code-checks.yml
 
   build-and-publish:
+    # Forks can use Pages without building or publishing a Docker image.
+    if: github.repository == 'iburakov/my-itmo-ru-to-ical'
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     needs: run-code-checks
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - uses: satackey/action-docker-layer-caching@v0.0.11
         name: Cache Docker layers

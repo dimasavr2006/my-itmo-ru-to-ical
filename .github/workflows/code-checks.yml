@@ -2,7 +2,12 @@ name: Check the code
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_call: # for calls of this workflow from image-builder
+
+permissions:
+  contents: read
 
 jobs:
   python-checks:
@@ -16,17 +21,19 @@ jobs:
           - tool: black
             run_cmd: black --check --diff src
           - tool: ruff
-            run_cmd: ruff check --diff src
+            run_cmd: ruff check src
           - tool: mypy
             # for mypy we need to install all deps for type hints, type stubs and mypy plugins
             setup_cmd: |
               poetry install --no-root
           - tool: vulture
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          python-version: 3.11
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
       - uses: abatilo/actions-poetry@v2
         with:
           poetry-version: 1.6.1
@@ -44,3 +51,21 @@ jobs:
         # run provided run_cmd or just call tool by name with no arguments
         run: |
           ${{ matrix.run_cmd && matrix.run_cmd || matrix.tool }}
+
+  calendar-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-calendar.txt
+      - run: python -m pip install -r requirements-calendar.txt
+      - run: python -m unittest discover -s tests -v

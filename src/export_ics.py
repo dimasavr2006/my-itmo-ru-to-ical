@@ -29,11 +29,12 @@ from calendar_processing import build_calendar
 from lessons_to_events import raw_lesson_to_event
 from main_api import get_raw_lessons
 from pages_export import validate_calendar_token, write_pages
+from schedule_overrides import apply_schedule_overrides
 
 
 def _public_lesson(lesson: dict) -> dict:
     """Only publish the fields needed to display when and where a class meets."""
-    fields = ("date", "time_start", "time_end", "subject", "type", "room", "building")
+    fields = ("date", "time_start", "time_end", "subject", "type", "room", "building", "additional")
     return {**{key: lesson[key] for key in fields if key in lesson}, "zoom_url": None}
 
 
@@ -41,6 +42,7 @@ async def fetch_calendar(username: str, password: str, *, public: bool = False) 
     async with ClientSession(timeout=ClientTimeout(total=120)) as session:
         token = await get_access_token(session, username, password)
         lessons = await get_raw_lessons(session, token)
+        lessons = apply_schedule_overrides(lessons)
         if public:
             lessons = map(_public_lesson, lessons)
         calendar = build_calendar(map(raw_lesson_to_event, lessons))

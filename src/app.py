@@ -10,6 +10,7 @@ from calendar_processing import build_calendar, calendar_to_ics_text
 from credentials_hashing import get_credentials_hash
 from lessons_to_events import raw_lesson_to_event
 from main_api import get_raw_lessons
+from schedule_overrides import apply_schedule_overrides
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("werkzeug").handlers = []  # prevent duplicated logging output
@@ -41,6 +42,7 @@ async def get_calendar():
 
         app.logger.info("Gathering lessons...")
         lessons = await get_raw_lessons(session, token)
+        lessons = apply_schedule_overrides(lessons)
 
         app.logger.info("Building the calendar...")
         lesson_events = map(raw_lesson_to_event, lessons)

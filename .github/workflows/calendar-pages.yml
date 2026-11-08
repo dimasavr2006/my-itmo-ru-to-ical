@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - src/**
+      - config/**
       - requirements-calendar.txt
       - .github/workflows/calendar-pages.yml
 

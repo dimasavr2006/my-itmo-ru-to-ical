@@ -71,7 +71,10 @@ def raw_lesson_to_event(raw_lesson: dict) -> Event:
     if begin > end:
         begin, end = end, begin
     event = Event(
-        name=f"[{_lesson_type_to_tag(raw_lesson['type'])}] {raw_lesson['subject']}",
+        name=(
+            f"[{_lesson_type_to_tag(raw_lesson['type'])}] {raw_lesson['subject']}"
+            + (" (доп.)" if raw_lesson.get("additional") else "")
+        ),
         begin=begin,
         end=end,
         description=_raw_lesson_to_description(raw_lesson),

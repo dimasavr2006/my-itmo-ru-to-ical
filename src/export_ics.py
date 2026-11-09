@@ -34,7 +34,17 @@ from schedule_overrides import apply_schedule_overrides
 
 def _public_lesson(lesson: dict) -> dict:
     """Only publish the fields needed to display when and where a class meets."""
-    fields = ("date", "time_start", "time_end", "subject", "type", "room", "building", "additional")
+    fields = (
+        "date",
+        "time_start",
+        "time_end",
+        "subject",
+        "type",
+        "room",
+        "building",
+        "additional",
+        "_original_time_start",
+    )
     return {**{key: lesson[key] for key in fields if key in lesson}, "zoom_url": None}
 
 

@@ -55,7 +55,7 @@ def _raw_lesson_to_location(raw_lesson: dict):
 def _raw_lesson_to_uuid(raw_lesson: dict):
     elements = [
         raw_lesson["date"],
-        raw_lesson["time_start"],
+        raw_lesson.get("_original_time_start", raw_lesson["time_start"]),
         raw_lesson["subject"],
     ]
     result = ", ".join(elements)

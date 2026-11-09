@@ -87,17 +87,9 @@ def _validate_replacement(replacement: dict, rule: dict) -> None:
         raise ValueError("Replacement must contain at least one period")
 
 
-def apply_schedule_overrides(lessons: Iterable[dict], config: dict | None = None) -> list[dict]:
-    source = list(lessons)
-    if not source:
-        return source
-    if config is None:
-        config = json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
-    if config["version"] != 1:
-        raise ValueError("Unsupported schedule corrections version")
-    periods = _bell_times(config)
+def _apply_replacement_rules(source: list[dict], rules: list[dict], periods: list[tuple[str, str]]) -> list[dict]:
     result = source
-    for rule in config["rules"]:
+    for rule in rules:
         date.fromisoformat(rule["date_start"])
         date.fromisoformat(rule["date_end"])
         if not any(_same_subject(lesson, rule) and _within_rule(lesson, rule) for lesson in source):
@@ -113,3 +105,50 @@ def apply_schedule_overrides(lessons: Iterable[dict], config: dict | None = None
             )
         ] + replacements
     return result
+
+
+def _matches_adjustment(lesson: dict, adjustment: dict) -> bool:
+    return (
+        _same_subject(lesson, adjustment)
+        and _within_rule(lesson, adjustment)
+        and lesson.get("type") in adjustment["types"]
+        and date.fromisoformat(lesson["date"]).weekday() in adjustment["weekdays"]
+    )
+
+
+def _shift_to_period(lesson: dict, adjustment: dict, periods: list[tuple[str, str]]) -> dict:
+    period = adjustment["period"]
+    if not 1 <= period <= len(periods):
+        raise ValueError("Unknown adjustment bell period")
+    start, end = periods[period - 1]
+    shifted = {
+        **lesson,
+        "_original_time_start": lesson.get("_original_time_start", lesson["time_start"]),
+        "time_start": start,
+        "time_end": end,
+    }
+    if adjustment.get("clear_location"):
+        shifted.pop("room", None)
+        shifted.pop("building", None)
+    return shifted
+
+
+def _apply_adjustments(lesson: dict, adjustments: list[dict], periods: list[tuple[str, str]]) -> dict:
+    result = lesson
+    for adjustment in adjustments:
+        if _matches_adjustment(result, adjustment):
+            result = _shift_to_period(result, adjustment, periods)
+    return result
+
+
+def apply_schedule_overrides(lessons: Iterable[dict], config: dict | None = None) -> list[dict]:
+    source = list(lessons)
+    if not source:
+        return source
+    if config is None:
+        config = json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
+    if config["version"] != 1:
+        raise ValueError("Unsupported schedule corrections version")
+    periods = _bell_times(config)
+    result = _apply_replacement_rules(source, config["rules"], periods)
+    return [_apply_adjustments(lesson, config.get("adjustments", []), periods) for lesson in result]
